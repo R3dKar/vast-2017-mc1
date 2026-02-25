@@ -24,6 +24,8 @@ with open('./data/sensors.csv', 'r') as file:
 
         data.append(RouteData(timestamp, car_id, car_type, gate_name))
 
+data = sorted(data, key=lambda x: x.timestamp)
+
 map_points = {
     'entrance1': (17, 132),
     'general-gate0': (110, 190),
@@ -70,6 +72,7 @@ map_points = {
 
 # gui
 dpg.create_context()
+dpg.configure_app(docking=True, docking_space=True)
 
 @dataclass
 class Image:
@@ -82,15 +85,29 @@ map_image = Image(*dpg.load_image('./data/map.bmp'))
 with dpg.texture_registry():
     dpg.add_static_texture(map_image.width, map_image.height, map_image.data, tag='map')
 
-with dpg.window(label="Map view", no_close=True):
-    with dpg.plot(label="Map", height=-1, width=-1, equal_aspects=True, no_title=True, tag='map_plot'):
-        dpg.add_plot_axis(dpg.mvXAxis, label="x", tag='map_plot_x')
-        dpg.add_plot_axis(dpg.mvYAxis, label="y", tag='map_plot_y')
+def car_changed(sender, selected_car_id: str, user_data):
+    route = [map_points[entry.gate_name] for entry in data if entry.car_id == selected_car_id]
+    route_x = [point[0] for point in route]
+    route_y = [point[1] for point in route]
+
+    dpg.delete_item('car_route')
+    dpg.add_line_series(route_x, route_y, parent='map_plot_y', label='Car\'s route', tag='car_route')
+
+with dpg.window(label='Map view', no_close=True):
+    with dpg.plot(height=-1, width=-1, equal_aspects=True, no_title=True, tag='map_plot'):
+        dpg.add_plot_axis(dpg.mvXAxis, label='x', tag='map_plot_x')
+        dpg.add_plot_axis(dpg.mvYAxis, label='y', tag='map_plot_y')
 
         for point_name, coordinates in map_points.items():
-            dpg.add_plot_annotation(label=point_name, default_value=coordinates, color=(255, 0, 0, 255), clamped=False)
+            dpg.add_plot_annotation(label=point_name, default_value=coordinates, color=(255, 0, 0, 128), clamped=False)
 
         dpg.add_image_series(texture_tag='map', bounds_min=(0, 0), bounds_max=(200, 200), parent='map_plot_y')
+
+with dpg.window(label='Cars', no_close=True):
+    car_ids = list(set(item.car_id for item in data))
+
+    dpg.add_text(f'Car ids ({len(car_ids)}):')
+    dpg.add_listbox(items=car_ids, num_items=20, callback=car_changed)
 
 dpg.create_viewport(title='Routes Preview', width=1600, height=900)
 dpg.setup_dearpygui()
