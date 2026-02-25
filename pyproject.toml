@@ -1,0 +1,11 @@
+[project]
+name = "vast-2017-mc1"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "dearpygui>=2.2",
+    "ipykernel>=7.2.0",
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.2",
+    "pip>=26.0.1",
+]
