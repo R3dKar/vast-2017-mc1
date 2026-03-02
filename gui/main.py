@@ -85,7 +85,10 @@ map_image = Image(*dpg.load_image('./data/map.bmp'))
 with dpg.texture_registry():
     dpg.add_static_texture(map_image.width, map_image.height, map_image.data, tag='map')
 
-def car_changed(sender, selected_car_id: str, user_data):
+def car_changed(sender, selected_car_id: str, user_data: str):
+    if user_data == 'button':
+        selected_car_id = dpg.get_value('car_id_input')
+
     route = [map_points[entry.gate_name] for entry in data if entry.car_id == selected_car_id]
     route_x = [point[0] for point in route]
     route_y = [point[1] for point in route]
@@ -109,9 +112,12 @@ with dpg.window(label='Cars', no_close=True):
     # расскомментировать вместо строки выше, если нужно отобразить только 2P машины
     # cars_type_2p = [item for item in data if item.car_type == "2P"]
     # car_ids = list(set(item.car_id for item in cars_type_2p))
+    with dpg.group(horizontal=True):
+        dpg.add_input_text(label='Car id', tag='car_id_input')
+        dpg.add_button(label='Show', callback=car_changed, user_data='button')
 
     dpg.add_text(f'Car ids ({len(car_ids)}):')
-    dpg.add_listbox(items=car_ids, num_items=20, callback=car_changed)
+    dpg.add_listbox(items=car_ids, num_items=20, width=-1, callback=car_changed, user_data='list')
 
 dpg.create_viewport(title='Routes Preview', width=1600, height=900)
 dpg.setup_dearpygui()
