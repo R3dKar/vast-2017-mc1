@@ -35,8 +35,8 @@ gate_counts_full = ranger_df['gate_name'].value_counts().reindex(all_gate_types,
 
 plt.figure(figsize=(18, 8))
 bars = plt.bar(range(len(all_gate_types)), gate_counts_full.values, color='steelblue', alpha=0.8)
-plt.title('Использование ворот рейнджерами (2P) - все типы', fontsize=16, fontweight='bold', pad=20)
-plt.xlabel('Название ворот')
+plt.title('Попадание рейнджерами (2P) на датчики', fontsize=16, fontweight='bold', pad=20)
+plt.xlabel('Датчик')
 plt.ylabel('Количество проходов')
 plt.xticks(range(len(all_gate_types)), all_gate_types, rotation=45, ha='right')
 
