@@ -106,6 +106,10 @@ with dpg.window(label='Map view', no_close=True):
 with dpg.window(label='Cars', no_close=True):
     car_ids = list(set(item.car_id for item in data))
 
+    # расскомментировать вместо строки выше, если нужно отобразить только 2P машины
+    # cars_type_2p = [item for item in data if item.car_type == "2P"]
+    # car_ids = list(set(item.car_id for item in cars_type_2p))
+
     dpg.add_text(f'Car ids ({len(car_ids)}):')
     dpg.add_listbox(items=car_ids, num_items=20, callback=car_changed)
 
