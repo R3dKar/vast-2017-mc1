@@ -1,0 +1,12 @@
+Language: Cpp
+ColumnLimit: 200
+IndentWidth: 2
+UseTab: Never
+PointerAlignment: Left
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: None
+AllowShortLambdasOnASingleLine: All
+AlwaysBreakTemplateDeclarations: true
+NamespaceIndentation: All
