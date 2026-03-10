@@ -843,6 +843,15 @@ wheels = [
 ]
 
 [[package]]
+name = "sgt"
+version = "2.0.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c5/82/8886147eb181c91d477e4322ccce4a415af28c7186318338e8151d068ea9/sgt-2.0.3.tar.gz", hash = "sha256:169e7ee86998f53c27d47c6c2845c769a4eb5576dc3377acab362b5d452a45a1", size = 43751, upload-time = "2020-04-23T15:21:58.079Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/aa/ac/158c762acd2a75f347a480271de12e06a95d2c75a30026207f827568f8ea/sgt-2.0.3-py3-none-any.whl", hash = "sha256:16ba2b4a430fe34f17bb2c1f460227a6cfe1b839db96a782ed288911511dc81f", size = 27559, upload-time = "2020-04-23T15:21:42.28Z" },
+]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -938,6 +947,7 @@ dependencies = [
     { name = "plotly" },
     { name = "scikit-learn" },
     { name = "seaborn" },
+    { name = "sgt" },
     { name = "tqdm" },
 ]
 
@@ -953,6 +963,7 @@ requires-dist = [
     { name = "plotly", specifier = ">=6.6.0" },
     { name = "scikit-learn", specifier = ">=1.8.0" },
     { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "sgt", specifier = ">=2.0.3" },
     { name = "tqdm", specifier = ">=4.67.3" },
 ]
 
