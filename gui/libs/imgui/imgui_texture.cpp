@@ -4,7 +4,6 @@
 
 ImGui::Texture::Texture(const char* filename) {
   int width, height, channels;
-  stbi_set_flip_vertically_on_load(true);
   stbi_uc* data = stbi_load(filename, &width, &height, &channels, 0);
 
   m_width = width;
@@ -120,6 +119,10 @@ size_t ImGui::Texture::GetWidth() const {
 
 size_t ImGui::Texture::GetHeight() const {
   return m_height;
+}
+
+size_t ImGui::Texture::GetChannels() const {
+  return m_channels;
 }
 
 ImVec2 ImGui::Texture::GetSize() const {

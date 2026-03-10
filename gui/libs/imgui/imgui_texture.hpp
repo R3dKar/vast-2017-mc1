@@ -28,6 +28,7 @@ namespace ImGui {
 
     size_t GetWidth() const;
     size_t GetHeight() const;
+    size_t GetChannels() const;
     ImVec2 GetSize() const;
     void* GetID();
 
