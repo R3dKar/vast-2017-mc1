@@ -15,7 +15,7 @@ namespace gui {
   static std::vector<data::Route> routes;
   static ImGui::Texture map_texture;
   static ImGui::Texture map_overlay;
-  static std::unordered_map<int, std::vector<std::string>> clusters{};
+  static std::unordered_map<std::string, std::vector<std::string>> clusters{};
   constexpr ImPlotColormap default_colormap = ImPlotColormap_Plasma;
 
   ImGui::Texture build_hitcount_overlay(const std::vector<data::Route>& routes, const ImGui::Texture& map_texture) {
@@ -72,7 +72,7 @@ namespace gui {
   }
 
   void DataSelection() {
-    static std::optional<int> selected_cluster = std::nullopt;
+    static std::optional<std::string> selected_cluster = std::nullopt;
     static ImGuiTextFilter filter{};
 
     if (ImGui::Begin("Data selection")) {
@@ -80,11 +80,10 @@ namespace gui {
 
       if (ImGui::BeginListBox("##cluster_listbox", ImVec2(-1, -1))) {
         for (const auto& [cluster, car_ids] : clusters) {
-          std::string cluster_string = std::to_string(cluster);
-          if (!filter.PassFilter(cluster_string.c_str())) continue;
+          if (!filter.PassFilter(cluster.c_str())) continue;
 
           const bool is_selected = selected_cluster.has_value() && selected_cluster.value() == cluster;
-          if (ImGui::Selectable(cluster_string.c_str(), is_selected)) {
+          if (ImGui::Selectable(cluster.c_str(), is_selected)) {
             selected_cluster = cluster;
             std::vector<data::Route> cluster_routes{};
             for (const auto& car_id : car_ids) {

@@ -74,5 +74,5 @@ namespace data {
     static std::vector<Route> Load(const char* filename, std::optional<std::function<bool(const Route&)>> filter = std::nullopt);
   };
 
-  std::unordered_map<int, std::vector<std::string>> read_clusters(const char* filename);
+  std::unordered_map<std::string, std::vector<std::string>> read_clusters(const char* filename);
 } // namespace data

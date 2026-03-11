@@ -152,8 +152,8 @@ std::vector<data::Route> data::Route::Load(const char* filename, std::optional<s
   return result;
 }
 
-std::unordered_map<int, std::vector<std::string>> data::read_clusters(const char* filename) {
-  std::unordered_map<int, std::vector<std::string>> clusters{};
+std::unordered_map<std::string, std::vector<std::string>> data::read_clusters(const char* filename) {
+  std::unordered_map<std::string, std::vector<std::string>> clusters{};
 
   std::ifstream csv_file(filename);
   std::string line;
@@ -170,7 +170,7 @@ std::unordered_map<int, std::vector<std::string>> data::read_clusters(const char
     tokens.emplace_back(line.substr(pos));
 
     auto& car_id = tokens.at(0);
-    auto cluster = std::stoi(tokens.at(1));
+    auto cluster = tokens.at(1);
 
     if (clusters.find(cluster) == clusters.end()) clusters[cluster] = std::vector<std::string>{};
     clusters.at(cluster).emplace_back(std::move(car_id));
