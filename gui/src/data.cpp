@@ -139,8 +139,8 @@ std::vector<data::Route> data::Route::Load(const char* filename, std::optional<s
     auto& car_type = tokens.at(2);
     auto& sensor = tokens.at(3);
 
-    if (routes.find(car_id) == routes.end()) routes.emplace(car_id, Route{car_id, car_type, {}});
-    routes.at(car_id).points.emplace_back(sensor, timestamp);
+    if (routes.find(car_id) == routes.end()) routes.emplace(car_id, Route{car_id, std::move(car_type), {}});
+    routes.at(car_id).points.emplace_back(std::move(sensor), std::move(timestamp));
   }
 
   std::vector<Route> result{};
@@ -150,4 +150,31 @@ std::vector<data::Route> data::Route::Load(const char* filename, std::optional<s
     result.emplace_back(std::move(value));
   }
   return result;
+}
+
+std::unordered_map<int, std::vector<std::string>> data::read_clusters(const char* filename) {
+  std::unordered_map<int, std::vector<std::string>> clusters{};
+
+  std::ifstream csv_file(filename);
+  std::string line;
+  std::getline(csv_file, line); // skip header
+  while (std::getline(csv_file, line)) {
+    std::vector<std::string> tokens{};
+
+    size_t pos = 0;
+    size_t next = 0;
+    while ((next = line.find(',', pos)) != std::string::npos) {
+      tokens.emplace_back(line.substr(pos, next - pos));
+      pos = next + 1;
+    }
+    tokens.emplace_back(line.substr(pos));
+
+    auto& car_id = tokens.at(0);
+    auto cluster = std::stoi(tokens.at(1));
+
+    if (clusters.find(cluster) == clusters.end()) clusters[cluster] = std::vector<std::string>{};
+    clusters.at(cluster).emplace_back(std::move(car_id));
+  }
+
+  return clusters;
 }

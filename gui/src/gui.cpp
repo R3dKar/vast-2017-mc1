@@ -2,10 +2,12 @@
 #include "data.hpp"
 #include "pathfinding.hpp"
 #include <algorithm>
+#include <fstream>
 #include <imgui.h>
 #include <imgui_texture.hpp>
 #include <implot.h>
 #include <mutex>
+#include <unordered_map>
 #include <vector>
 
 namespace gui {
@@ -13,6 +15,8 @@ namespace gui {
   static std::vector<data::Route> routes;
   static ImGui::Texture map_texture;
   static ImGui::Texture map_overlay;
+  static std::unordered_map<int, std::vector<std::string>> clusters{};
+  constexpr ImPlotColormap default_colormap = ImPlotColormap_Plasma;
 
   ImGui::Texture build_hitcount_overlay(const std::vector<data::Route>& routes, const ImGui::Texture& map_texture) {
     std::vector<size_t> hit_count(map_texture.GetWidth() * map_texture.GetHeight(), 0);
@@ -20,7 +24,7 @@ namespace gui {
       for (size_t i = 0; i < route.points.size() - 1; i++) {
         const auto sensor1 = route.points.at(i).sensor;
         const auto sensor2 = route.points.at(i + 1).sensor;
-        const auto path = pathfinding::a_star(data::sensor_location_map.at(sensor1), data::sensor_location_map.at(sensor2), map_texture);
+        const auto& path = pathfinding::find_path(sensor1, sensor2, map_texture);
         for (const auto point : path) {
           const size_t x = static_cast<size_t>(std::round(point.x * map_texture.GetWidth()));
           const size_t y = static_cast<size_t>(std::round(point.y * map_texture.GetHeight()));
@@ -47,8 +51,11 @@ namespace gui {
 
         if (t == 0.0f) continue;
 
-        map_overlay.at(x, y, 0) = 255;
-        map_overlay.at(x, y, 3) = static_cast<stbi_uc>(255 * t);
+        ImVec4 color = ImPlot::SampleColormap(t, default_colormap);
+        map_overlay.at(x, y, 0) = static_cast<stbi_uc>(color.x * 255);
+        map_overlay.at(x, y, 1) = static_cast<stbi_uc>(color.y * 255);
+        map_overlay.at(x, y, 2) = static_cast<stbi_uc>(color.z * 255);
+        map_overlay.at(x, y, 3) = static_cast<stbi_uc>(color.w * 255);
       }
     }
     map_overlay.Sync();
@@ -60,11 +67,42 @@ namespace gui {
     routes = data::Route::Load("./sensors.csv");
     map_texture = ImGui::Texture("./map.bmp");
     map_overlay = build_hitcount_overlay(routes, map_texture);
+    clusters = data::read_clusters("./clusters.csv");
+    ImPlot::PushColormap(default_colormap);
+  }
+
+  void DataSelection() {
+    static std::optional<int> selected_cluster = std::nullopt;
+    static ImGuiTextFilter filter{};
+
+    if (ImGui::Begin("Data selection")) {
+      filter.Draw("Filter clusters");
+
+      if (ImGui::BeginListBox("##cluster_listbox", ImVec2(-1, -1))) {
+        for (const auto& [cluster, car_ids] : clusters) {
+          std::string cluster_string = std::to_string(cluster);
+          if (!filter.PassFilter(cluster_string.c_str())) continue;
+
+          const bool is_selected = selected_cluster.has_value() && selected_cluster.value() == cluster;
+          if (ImGui::Selectable(cluster_string.c_str(), is_selected)) {
+            selected_cluster = cluster;
+            std::vector<data::Route> cluster_routes{};
+            for (const auto& car_id : car_ids) {
+              cluster_routes.emplace_back(*std::find_if(routes.cbegin(), routes.cend(), [&](const auto& route) { return route.car_id == car_id; }));
+            }
+            map_overlay = build_hitcount_overlay(cluster_routes, map_texture);
+          }
+        }
+
+        ImGui::EndListBox();
+      }
+    }
+    ImGui::End();
   }
 
   void Map() {
     if (ImGui::Begin("Map")) {
-      if (ImPlot::BeginPlot("Map", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_Equal)) {
+      if (ImPlot::BeginPlot("Map", ImVec2(ImGui::GetContentRegionAvail().x - 100 - ImGui::GetStyle().ItemSpacing.x, -1), ImPlotFlags_NoTitle | ImPlotFlags_Equal)) {
         ImPlot::SetupAxis(ImAxis_X1, "X");
         ImPlot::SetupAxis(ImAxis_Y1, "Y", ImPlotAxisFlags_Invert);
 
@@ -72,7 +110,7 @@ namespace gui {
         ImPlot::PlotImage("Map", map_texture.GetID(), ImPlotPoint(0, 1), ImPlotPoint(1, 0));
 
         // Overlay
-        ImPlot::PlotImage("Path", map_overlay.GetID(), ImPlotPoint(0, 1), ImPlotPoint(1, 0), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1, 0, 0, 1));
+        ImPlot::PlotImage("Path", map_overlay.GetID(), ImPlotPoint(0, 1), ImPlotPoint(1, 0));
 
         // Sensor labels
         ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.5, 1, 0.5, 1));
@@ -83,6 +121,9 @@ namespace gui {
         ImPlot::PopStyleColor();
       }
       ImPlot::EndPlot();
+
+      ImGui::SameLine();
+      ImPlot::ColormapScale("Path hitcount", 0, 1, ImVec2(100, -1));
     }
     ImGui::End();
   }
@@ -92,6 +133,7 @@ namespace gui {
     std::call_once(init_flag, init);
 
     Map();
+    DataSelection();
   }
 
 } // namespace gui

@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <optional>
 #include <queue>
+#include <unordered_map>
+#include <utility>
 
 namespace {
   struct Point {
@@ -114,4 +116,24 @@ std::vector<ImVec2> pathfinding::a_star(ImVec2 start, ImVec2 end, const ImGui::T
   }
 
   return {};
+}
+
+namespace std {
+  template <>
+  struct hash<std::pair<data::Sensor, data::Sensor>> {
+    size_t operator()(const std::pair<data::Sensor, data::Sensor>& p) const noexcept {
+      size_t hash1 = std::hash<data::Sensor>{}(p.first);
+      size_t hash2 = std::hash<data::Sensor>{}(p.second);
+      return hash1 ^ (hash2 ^ 0x9e3779b9 + (hash1 << 6) + (hash1 >> 2));
+    }
+  };
+} // namespace std
+
+const std::vector<ImVec2>& pathfinding::find_path(data::Sensor start, data::Sensor end, const ImGui::Texture& image) {
+  static std::unordered_map<std::pair<data::Sensor, data::Sensor>, std::vector<ImVec2>> cache{};
+
+  const auto key = std::make_pair(start, end);
+  if (cache.find(key) == cache.end()) cache[key] = a_star(data::sensor_location_map.at(start), data::sensor_location_map.at(end), image);
+
+  return cache.at(key);
 }
