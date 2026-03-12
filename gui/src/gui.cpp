@@ -18,7 +18,9 @@ namespace gui {
   static ImGui::Texture map_texture;
   static ImGui::Texture map_overlay;
 
-  static std::unordered_map<std::string, std::vector<std::string>> clusters{};
+  static std::unordered_map<std::string, std::vector<size_t>> clusters{};
+  static std::optional<std::string> current_cluster = std::nullopt;
+
   static double min_timestamp, max_timestamp, current_timestamp;
   static std::vector<uint16_t> timeline_histogram{};
 
@@ -89,10 +91,42 @@ namespace gui {
     return histogram;
   }
 
+  void render_route(const data::Route& route, double timestamp) {
+    if (timestamp < route.points.front().timestamp || timestamp > route.points.back().timestamp) return;
+
+    size_t segment_index;
+    for (segment_index = 0; segment_index < route.points.size() - 1; segment_index++) {
+      if (timestamp >= route.points.at(segment_index).timestamp && timestamp < route.points.at(segment_index + 1).timestamp) break;
+    }
+
+    const auto start = route.points.at(segment_index);
+    const auto end = route.points.at(segment_index + 1);
+    const double t = std::clamp((timestamp - start.timestamp) / (end.timestamp - start.timestamp), 0.0, 1.0);
+    const auto& points = pathfinding::find_path(start.sensor, end.sensor, map_texture);
+    const ImVec2 point = points.at(static_cast<size_t>(std::floor(t * (points.size() - 1))));
+
+    ImPlot::Annotation(point.x, point.y, ImVec4(1, 0, 0, 1), ImVec2(10, 10), false, route.car_id.c_str());
+  }
+
   void format_timestamp(double timestamp, char* buffer, size_t buffer_size, const char* format) {
     std::time_t time = static_cast<std::time_t>(timestamp);
     std::tm* timeinfo = std::gmtime(&time);
     std::strftime(buffer, buffer_size, format, timeinfo);
+  }
+
+  void update_selected_cluster() {
+    if (!current_cluster.has_value()) {
+      map_overlay = build_hitcount_overlay(routes, map_texture);
+      timeline_histogram = build_timeline_histogram(routes, min_timestamp, max_timestamp);
+      return;
+    }
+
+    std::vector<data::Route> cluster_routes{};
+    for (auto index : clusters.at(current_cluster.value())) {
+      cluster_routes.emplace_back(routes.at(index));
+    }
+    map_overlay = build_hitcount_overlay(cluster_routes, map_texture);
+    timeline_histogram = build_timeline_histogram(cluster_routes, min_timestamp, max_timestamp);
   }
 
   void init() {
@@ -101,35 +135,43 @@ namespace gui {
 
     routes = data::Route::Load("./sensors.csv");
     map_texture = ImGui::Texture("./map.bmp");
-    map_overlay = build_hitcount_overlay(routes, map_texture);
-    clusters = data::read_clusters("./clusters.csv");
-    timeline_histogram = build_timeline_histogram(routes, min_timestamp, max_timestamp);
-  }
+    const auto raw_clusters = data::read_clusters("./clusters.csv");
 
-  void update_selected_cluster(const std::vector<std::string>& car_ids) {
-    std::vector<data::Route> cluster_routes{};
-    for (const auto& car_id : car_ids) {
-      cluster_routes.emplace_back(*std::find_if(routes.cbegin(), routes.cend(), [&](const auto& route) { return route.car_id == car_id; }));
+    std::unordered_map<std::string, size_t> car_id_to_route_index{};
+    for (size_t i = 0; i < routes.size(); i++) {
+      car_id_to_route_index[routes.at(i).car_id] = i;
     }
-    map_overlay = build_hitcount_overlay(cluster_routes, map_texture);
-    timeline_histogram = build_timeline_histogram(cluster_routes, min_timestamp, max_timestamp);
+
+    for (const auto& [cluster, car_ids] : raw_clusters) {
+      std::vector<size_t> indexes(car_ids.size());
+      for (size_t i = 0; i < car_ids.size(); i++) {
+        indexes.at(i) = car_id_to_route_index.at(car_ids.at(i));
+      }
+      clusters[cluster] = std::move(indexes);
+    }
+
+    update_selected_cluster();
   }
 
   void DataSelection() {
-    static std::optional<std::string> selected_cluster = std::nullopt;
     static ImGuiTextFilter filter{};
 
     if (ImGui::Begin("Data selection")) {
       filter.Draw("Filter clusters");
 
       if (ImGui::BeginListBox("##cluster_listbox", ImVec2(-1, -1))) {
+        if (ImGui::Selectable("All", !current_cluster.has_value())) {
+          current_cluster = std::nullopt;
+          update_selected_cluster();
+        }
+
         for (const auto& [cluster, car_ids] : clusters) {
           if (!filter.PassFilter(cluster.c_str())) continue;
 
-          const bool is_selected = selected_cluster.has_value() && selected_cluster.value() == cluster;
+          const bool is_selected = current_cluster.has_value() && current_cluster.value() == cluster;
           if (ImGui::Selectable(cluster.c_str(), is_selected)) {
-            selected_cluster = cluster;
-            update_selected_cluster(car_ids);
+            current_cluster = cluster;
+            update_selected_cluster();
           }
         }
 
@@ -158,6 +200,18 @@ namespace gui {
           ImPlot::PlotText(sensor_name, position.x + 0.5 / map_texture.GetWidth(), position.y - 1.5 / map_texture.GetHeight());
         }
         ImPlot::PopStyleColor();
+
+        // Cars
+        if (current_cluster.has_value()) {
+          for (const auto& index : clusters.at(current_cluster.value())) {
+            render_route(routes.at(index), current_timestamp);
+          }
+        } else {
+          for (const auto& route : routes) {
+            render_route(route, current_timestamp);
+          }
+        }
+
         ImPlot::EndPlot();
       }
 
@@ -181,7 +235,7 @@ namespace gui {
         // Cars in park histogram
         const auto timeline_getter = [](int idx, void* data) { return ImPlotPoint(idx * 3600 + min_timestamp, reinterpret_cast<uint16_t*>(data)[idx]); };
         ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.25f);
-        ImPlot::PlotStairsG("Cars in park", timeline_getter, timeline_histogram.data(), static_cast<int>(timeline_histogram.size()), ImPlotStairsFlags_Shaded);
+        ImPlot::PlotStairsG("Cars in park", timeline_getter, timeline_histogram.data(), static_cast<int>(timeline_histogram.size()), ImPlotStairsFlags_Shaded | ImPlotStairsFlags_PreStep);
 
         // Timeline selector
         ImPlot::DragLineX(0, &current_timestamp, ImVec4(1, 1, 1, 1), 2.0f);
