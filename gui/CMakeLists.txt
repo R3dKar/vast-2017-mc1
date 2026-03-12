@@ -19,5 +19,6 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 )
 
 if (MSVC)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
   set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE $<$<CONFIG:Release>:ON>)
 endif()
