@@ -1,6 +1,5 @@
 #pragma once
 
-#include <chrono>
 #include <functional>
 #include <imgui.h>
 #include <optional>
@@ -61,7 +60,7 @@ namespace data {
 
   struct RoutePoint {
     Sensor sensor;
-    std::chrono::system_clock::time_point timestamp;
+    double timestamp;
 
     RoutePoint(const std::string& sensor, const std::string& timestamp);
   };

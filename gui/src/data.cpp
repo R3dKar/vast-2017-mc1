@@ -113,7 +113,7 @@ data::RoutePoint::RoutePoint(const std::string& sensor, const std::string& times
   std::tm tm_struct{};
   std::istringstream ss(timestamp);
   ss >> std::get_time(&tm_struct, "%Y-%m-%d %H:%M:%S");
-  this->timestamp = std::chrono::system_clock::from_time_t(std::mktime(&tm_struct));
+  this->timestamp = std::difftime(std::mktime(&tm_struct), 0);
 }
 
 std::vector<data::Route> data::Route::Load(const char* filename, std::optional<std::function<bool(const Route&)>> filter) {

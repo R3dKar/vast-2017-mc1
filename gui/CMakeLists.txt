@@ -19,5 +19,5 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 )
 
 if (MSVC)
-  target_link_options(${PROJECT_NAME} PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
+  set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE $<$<CONFIG:Release>:ON>)
 endif()

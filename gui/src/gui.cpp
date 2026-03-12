@@ -68,7 +68,6 @@ namespace gui {
     map_texture = ImGui::Texture("./map.bmp");
     map_overlay = build_hitcount_overlay(routes, map_texture);
     clusters = data::read_clusters("./clusters.csv");
-    ImPlot::PushColormap(default_colormap);
   }
 
   void DataSelection() {
@@ -122,7 +121,9 @@ namespace gui {
       ImPlot::EndPlot();
 
       ImGui::SameLine();
+      ImPlot::PushColormap(default_colormap);
       ImPlot::ColormapScale("Path hitcount", 0, 1, ImVec2(100, -1));
+      ImPlot::PopColormap();
     }
     ImGui::End();
   }
