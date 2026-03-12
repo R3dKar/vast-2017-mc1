@@ -225,6 +225,21 @@ namespace gui {
 
   void Timeline() {
     if (ImGui::Begin("Timeline")) {
+      static bool is_running = false;
+      static float speed = 1;
+
+      if (ImGui::Button((is_running) ? "Stop" : "Start")) is_running = !is_running;
+      ImGui::SameLine();
+      ImGui::SliderFloat("Speed", &speed, 1, 1 << 14, "%.3f", ImGuiSliderFlags_Logarithmic);
+
+      if (is_running) {
+        current_timestamp += ImGui::GetIO().DeltaTime * speed;
+
+        if (current_timestamp >= max_timestamp) is_running = false;
+
+        current_timestamp = std::clamp(current_timestamp, min_timestamp, max_timestamp);
+      }
+
       if (ImPlot::BeginPlot("Timeline", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend)) {
         ImPlot::SetupAxis(ImAxis_X1);
         ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
@@ -238,6 +253,8 @@ namespace gui {
         ImPlot::PlotStairsG("Cars in park", timeline_getter, timeline_histogram.data(), static_cast<int>(timeline_histogram.size()), ImPlotStairsFlags_Shaded | ImPlotStairsFlags_PreStep);
 
         // Timeline selector
+        if (ImPlot::IsPlotHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) current_timestamp = ImPlot::GetPlotMousePos().x;
+
         ImPlot::DragLineX(0, &current_timestamp, ImVec4(1, 1, 1, 1), 2.0f);
         current_timestamp = std::clamp(current_timestamp, min_timestamp, max_timestamp);
 
