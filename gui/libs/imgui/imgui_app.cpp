@@ -5,6 +5,8 @@
 #include <imgui_impl_opengl3.h>
 #include <implot.h>
 #include <iostream>
+#include <nfd.h>
+#include <nfd_glfw3.h>
 
 #define GL_SILENCE_DEPRECATION
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -26,6 +28,9 @@ namespace {
     GLFWInitializer() {
       glfwSetErrorCallback(::glfw_error_callback);
       glfwInit();
+
+      NFD_Init();
+      NFD_SetDisplayPropertiesFromGLFW();
 
 #if defined(IMGUI_IMPL_OPENGL_ES2)
       glsl_version = "#version 100";
@@ -51,6 +56,7 @@ namespace {
     }
 
     ~GLFWInitializer() {
+      NFD_Quit();
       glfwTerminate();
     }
 

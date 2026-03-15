@@ -33,7 +33,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   implot
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL PUBLIC glfw)
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL nfd::nfd PUBLIC glfw)
 
 if (UNIX)
   target_link_libraries(${PROJECT_NAME} PRIVATE X11) 

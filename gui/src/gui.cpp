@@ -4,12 +4,11 @@
 #include "utility.hpp"
 #include <algorithm>
 #include <array>
-#include <fstream>
 #include <imgui.h>
 #include <imgui_texture.hpp>
 #include <implot.h>
-#include <limits>
 #include <mutex>
+#include <nfd.h>
 #include <unordered_map>
 #include <vector>
 
@@ -126,34 +125,65 @@ namespace gui {
     }
   }
 
+  void load_clusters_data(const char* path) {
+    try {
+      const auto raw_clusters = data::read_clusters(path);
+
+      std::unordered_map<std::string, size_t> car_id_to_route_index{};
+      for (size_t i = 0; i < routes.size(); i++) {
+        car_id_to_route_index[routes.at(i).car_id] = i;
+      }
+
+      std::unordered_map<std::string, std::vector<size_t>> new_clusters{};
+
+      for (const auto& [cluster, car_ids] : raw_clusters) {
+        std::vector<size_t> indexes(car_ids.size());
+        for (size_t i = 0; i < car_ids.size(); i++) {
+          indexes.at(i) = car_id_to_route_index.at(car_ids.at(i));
+        }
+        new_clusters[cluster] = std::move(indexes);
+      }
+
+      std::swap(new_clusters, clusters);
+    } catch (...) {
+      ImGui::OpenPopup("Failed to load clusters");
+      return;
+    }
+
+    current_cluster = std::nullopt;
+    update_selected_cluster();
+  }
+
   void init() {
     ImPlot::GetStyle().Use24HourClock = true;
     ImPlot::GetStyle().UseISO8601 = true;
 
     routes = data::Route::Load("./sensors.csv");
     map_texture = ImGui::Texture("./map.bmp");
-    const auto raw_clusters = data::read_clusters("./clusters.csv");
-
-    std::unordered_map<std::string, size_t> car_id_to_route_index{};
-    for (size_t i = 0; i < routes.size(); i++) {
-      car_id_to_route_index[routes.at(i).car_id] = i;
-    }
-
-    for (const auto& [cluster, car_ids] : raw_clusters) {
-      std::vector<size_t> indexes(car_ids.size());
-      for (size_t i = 0; i < car_ids.size(); i++) {
-        indexes.at(i) = car_id_to_route_index.at(car_ids.at(i));
-      }
-      clusters[cluster] = std::move(indexes);
-    }
-
-    update_selected_cluster();
+    load_clusters_data("./clusters.csv");
   }
 
   void DataSelection() {
     static ImGuiTextFilter filter{};
 
     if (ImGui::Begin("Data selection")) {
+      // host for error modal window
+      if (ImGui::BeginPopupModal("Failed to load clusters", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Selected file has invalid format or been corrupted");
+        if (ImGui::Button("OK", ImVec2(-1, 0))) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+      }
+
+      if (ImGui::Button("Load clusters data", ImVec2(-1, 0))) {
+        nfdu8char_t* path;
+        nfdu8filteritem_t filter[1] = {{"Clusters data", "csv,txt"}};
+        nfdopendialogu8args_t args{};
+        args.filterList = filter;
+        args.filterCount = 1;
+        nfdresult_t result = NFD_OpenDialogU8_With(&path, &args);
+        if (result == NFD_OKAY) load_clusters_data(path);
+      }
+
       filter.Draw("Filter clusters");
 
       if (ImGui::BeginListBox("##cluster_listbox", ImVec2(-1, -1))) {
@@ -188,7 +218,7 @@ namespace gui {
         ImPlot::PlotImage("Map", map_texture.GetID(), ImPlotPoint(0, 1), ImPlotPoint(1, 0));
 
         // Overlay
-        ImPlot::PlotImage("Path", map_overlay.GetID(), ImPlotPoint(0, 1), ImPlotPoint(1, 0));
+        ImPlot::PlotImage("Paths", map_overlay.GetID(), ImPlotPoint(0, 1), ImPlotPoint(1, 0));
 
         // Sensor labels
         ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.5, 1, 0.5, 1));

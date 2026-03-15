@@ -7,3 +7,6 @@
 [submodule "gui/libs/imgui/glfw"]
 	path = gui/libs/imgui/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "gui/libs/nfde"]
+	path = gui/libs/nfde
+	url = https://github.com/btzy/nativefiledialog-extended.git
