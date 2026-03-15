@@ -36,6 +36,7 @@ namespace ImGui {
     void CreateTexture();
     void ReleaseGLTexture();
     void Dispose();
+    GLenum GetFormat() const;
 
     GLuint m_texture = 0;
     std::vector<stbi_uc> m_pixels{};

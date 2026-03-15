@@ -61,23 +61,7 @@ void ImGui::Texture::CreateTexture() {
   glBindTexture(GL_TEXTURE_2D, m_texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-  GLenum format;
-  switch (m_channels) {
-  case 4:
-    format = GL_RGBA;
-    break;
-  case 3:
-    format = GL_RGB;
-    break;
-  case 1:
-    format = GL_RED;
-    break;
-  }
-
-  glTexImage2D(GL_TEXTURE_2D, 0, format, static_cast<GLint>(m_width), static_cast<GLint>(m_height), 0, format, GL_UNSIGNED_BYTE, m_pixels.data());
+  Sync();
 }
 
 void ImGui::Texture::ReleaseGLTexture() {
@@ -100,9 +84,26 @@ ImGui::Texture::~Texture() {
   Dispose();
 }
 
+GLenum ImGui::Texture::GetFormat() const {
+  switch (m_channels) {
+  case 4:
+    return GL_RGBA;
+  case 3:
+    return GL_RGB;
+  case 1:
+    return GL_RED;
+  default:
+    return 0;
+  }
+}
+
 void ImGui::Texture::Sync() {
-  ReleaseGLTexture();
-  CreateTexture();
+  glBindTexture(GL_TEXTURE_2D, m_texture);
+  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+  const GLenum format = GetFormat();
+  glTexImage2D(GL_TEXTURE_2D, 0, format, static_cast<GLint>(m_width), static_cast<GLint>(m_height), 0, format, GL_UNSIGNED_BYTE, m_pixels.data());
 }
 
 stbi_uc& ImGui::Texture::at(size_t x, size_t y, size_t channel) {
