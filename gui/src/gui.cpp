@@ -405,7 +405,6 @@ namespace gui {
                     return result ^ (sort_specs->Specs->SortDirection == ImGuiSortDirection_Descending);
                   });
 
-                need_sorting = false;
                 sort_specs->SpecsDirty = false;
               }
             }
@@ -446,6 +445,8 @@ namespace gui {
           ImGui::TreePop();
         }
       }
+
+      need_sorting = false;
     }
     ImGui::End();
   }
