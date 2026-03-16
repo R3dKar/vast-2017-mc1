@@ -160,7 +160,7 @@ namespace gui {
 
     routes = data::Route::Load("./sensors.csv");
     map_texture = ImGui::Texture("./map.bmp");
-    load_clusters_data("./clusters.csv");
+    load_clusters_data("./clusters/bow_tsne_clusters.csv");
   }
 
   void DataSelection() {
@@ -456,9 +456,9 @@ namespace gui {
     std::call_once(init_flag, init);
 
     Map();
+    Campings();
     Timeline();
     DataSelection();
-    Campings();
   }
 
 } // namespace gui
