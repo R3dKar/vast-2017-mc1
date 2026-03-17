@@ -5,6 +5,7 @@
 * [Визуализация маршрутов на карте](./gui/README.md)
 * [Исходные данные](./data/sensors.csv)
 * [Описание данных](./data/description.md)
+* [Брошюра для посетителей парка](./data/brochure.md)
 
 ## Scenario 
 ### Overview
